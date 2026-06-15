@@ -424,3 +424,286 @@ document.addEventListener('DOMContentLoaded',()=>{
   setTimeout(bindLightbox,300);
   setInterval(bindLightbox,1200);
 });
+
+
+/* =========================================================
+   FIX DEFINITIVO BOTONES ADMIN
+   Delegación global: todos los botones del Admin funcionan aunque el HTML cambie.
+========================================================= */
+async function adminActionById(id){
+  const d = getData();
+
+  try{
+    if(id === 'saveSupabase'){
+      setCfg(document.getElementById('supabaseUrl')?.value, document.getElementById('supabaseKey')?.value);
+      confirmOk('Conexión Supabase guardada.');
+      return;
+    }
+
+    if(id === 'loadCloud'){
+      await pullCloud();
+      confirmOk('Datos cargados desde Supabase.');
+      renderAll();
+      fillAdmin();
+      return;
+    }
+
+    if(id === 'saveCloud'){
+      await pushCloud(getData());
+      confirmOk('Datos subidos a Supabase.');
+      return;
+    }
+
+    if(id === 'saveGeneral'){
+      d.settings.homeTitle = document.getElementById('homeTitle')?.value || d.settings.homeTitle;
+      d.settings.homeText = document.getElementById('homeIntroInput')?.value || '';
+      d.settings.activeMembers = document.getElementById('metricMembers')?.value || '0';
+      d.settings.championships = document.getElementById('metricTitles')?.value || '0';
+      d.siteConfig.whatsapp = document.getElementById('siteWhatsapp')?.value || '';
+      d.siteConfig.instagram = document.getElementById('siteInstagram')?.value || '';
+      d.siteConfig.facebook = document.getElementById('siteFacebook')?.value || '';
+      d.siteConfig.blue = document.getElementById('siteColorBlue')?.value || '#00c8ff';
+      d.siteConfig.gold = document.getElementById('siteColorGold')?.value || '#f7d36b';
+      await saveAll(d);
+      fillAdmin();
+      return;
+    }
+
+    if(id === 'saveMatch'){
+      let logo = document.getElementById('matchLogoUrl')?.value || '';
+      const f = document.getElementById('matchLogoFile')?.files?.[0];
+      if(f) logo = await uploadFile(f, 'logos');
+      d.nextMatch = {
+        rival: document.getElementById('matchRival')?.value || 'Por definir',
+        tournament: document.getElementById('matchTournament')?.value || '',
+        referee: document.getElementById('matchReferee')?.value || '',
+        broadcast: document.getElementById('matchBroadcast')?.value || '',
+        date: document.getElementById('matchDate')?.value || '',
+        place: document.getElementById('matchPlace')?.value || '',
+        logo
+      };
+      await saveAll(d);
+      fillAdmin();
+      return;
+    }
+
+    if(id === 'saveHistory'){
+      d.history.text = document.getElementById('historyText')?.value || '';
+      d.history.currentPresident = document.getElementById('presidentName')?.value || '';
+      await saveAll(d);
+      fillAdmin();
+      return;
+    }
+
+    if(id === 'addDirector'){
+      d.directors.push({
+        role: document.getElementById('directorRole')?.value || '',
+        name: document.getElementById('directorName')?.value || ''
+      });
+      await saveAll(d);
+      fillAdmin();
+      return;
+    }
+
+    if(id === 'addPresident'){
+      let image = '';
+      const f = document.getElementById('presidentPhoto')?.files?.[0];
+      if(f) image = await uploadFile(f, 'presidents');
+      d.presidents.unshift({
+        name: document.getElementById('presidentGalleryName')?.value || '',
+        period: document.getElementById('presidentPeriod')?.value || '',
+        image
+      });
+      await saveAll(d);
+      fillAdmin();
+      return;
+    }
+
+    if(id === 'addResult'){
+      d.results.unshift({
+        date: document.getElementById('resultDate')?.value || '',
+        match: document.getElementById('resultMatch')?.value || '',
+        score: document.getElementById('resultScore')?.value || ''
+      });
+      await saveAll(d);
+      fillAdmin();
+      return;
+    }
+
+    if(id === 'addNews'){
+      let image = '';
+      const f = document.getElementById('newsImage')?.files?.[0];
+      if(f) image = await uploadFile(f, 'news');
+      d.news.unshift({
+        title: document.getElementById('newsTitle')?.value || '',
+        text: document.getElementById('newsText')?.value || '',
+        date: new Date().toLocaleDateString('es-CL'),
+        image
+      });
+      await saveAll(d);
+      fillAdmin();
+      return;
+    }
+
+    if(id === 'addMedia'){
+      let url = document.getElementById('mediaUrl')?.value || '';
+      let type = 'image';
+      const f = document.getElementById('mediaFile')?.files?.[0];
+      if(f){
+        url = await uploadFile(f, 'gallery');
+        type = f.type && f.type.startsWith('video') ? 'video' : 'image';
+      }
+      d.gallery.unshift({
+        title: document.getElementById('mediaTitle')?.value || '',
+        type,
+        url
+      });
+      await saveAll(d);
+      fillAdmin();
+      return;
+    }
+
+    if(id === 'addFixture'){
+      let image = '';
+      const f = document.getElementById('fixtureImage')?.files?.[0];
+      if(f) image = await uploadFile(f, 'fixture');
+      d.fixture_images.unshift({
+        title: document.getElementById('fixtureTitle')?.value || '',
+        image
+      });
+      await saveAll(d);
+      fillAdmin();
+      return;
+    }
+
+    if(id === 'addStanding'){
+      const serie = document.getElementById('standingSerie')?.value || SERIES[0];
+      if(!d.standings[serie]) d.standings[serie] = [];
+      const gf = Number(document.getElementById('gf')?.value || 0);
+      const gc = Number(document.getElementById('gc')?.value || 0);
+      d.standings[serie].push({
+        team: document.getElementById('teamName')?.value || '',
+        pj: Number(document.getElementById('pj')?.value || 0),
+        pg: Number(document.getElementById('pg')?.value || 0),
+        pe: Number(document.getElementById('pe')?.value || 0),
+        pp: Number(document.getElementById('pp')?.value || 0),
+        gf, gc, dg: gf - gc,
+        pts: Number(document.getElementById('pts')?.value || 0)
+      });
+      await saveAll(d);
+      fillAdmin();
+      return;
+    }
+
+    if(id === 'addSponsor'){
+      let url = document.getElementById('sponsorUrl')?.value || '';
+      const fileInput = document.getElementById('sponsorFile') || document.getElementById('sponsorLogo');
+      const f = fileInput?.files?.[0];
+      if(f) url = await uploadFile(f, 'sponsors');
+      d.sponsors.push({
+        name: document.getElementById('sponsorName')?.value || '',
+        url
+      });
+      await saveAll(d);
+      fillAdmin();
+      return;
+    }
+
+    if(id === 'saveBackground'){
+      let url = document.getElementById('backgroundUrl')?.value || '';
+      const f = document.getElementById('backgroundFile')?.files?.[0];
+      if(f) url = await uploadFile(f, 'backgrounds');
+      d.appearance = d.appearance || {};
+      d.appearance.backgroundImage = url;
+      await saveAll(d);
+      fillAdmin();
+      return;
+    }
+
+    if(id === 'restoreBackground'){
+      d.appearance = d.appearance || {};
+      d.appearance.backgroundImage = '';
+      await saveAll(d);
+      fillAdmin();
+      return;
+    }
+
+    if(id === 'saveAppearanceColors'){
+      d.appearance = d.appearance || {};
+      d.appearance.blue = document.getElementById('appearanceBlue')?.value || '#00c8ff';
+      d.appearance.gold = document.getElementById('appearanceGold')?.value || '#f7d36b';
+      d.appearance.overlay = document.getElementById('backgroundOverlay')?.value || 35;
+      d.siteConfig.blue = d.appearance.blue;
+      d.siteConfig.gold = d.appearance.gold;
+      await saveAll(d);
+      fillAdmin();
+      return;
+    }
+
+  }catch(e){
+    console.error('Error botón Admin:', id, e);
+    confirmError(e.message || 'Error al ejecutar acción.');
+  }
+}
+
+(function(){
+  if(window.__ADMIN_BUTTONS_DELEGATED_FINAL) return;
+  window.__ADMIN_BUTTONS_DELEGATED_FINAL = true;
+
+  document.addEventListener('click', async function(e){
+    const btn = e.target.closest('button');
+    if(!btn) return;
+
+    const id = btn.id || '';
+    const adminIds = [
+      'saveSupabase','loadCloud','saveCloud','saveGeneral','saveMatch','saveHistory',
+      'addDirector','addPresident','addResult','addNews','addMedia','addFixture',
+      'addStanding','addSponsor','saveBackground','restoreBackground','saveAppearanceColors'
+    ];
+
+    if(adminIds.includes(id)){
+      e.preventDefault();
+      e.stopPropagation();
+      btn.disabled = true;
+      const oldText = btn.textContent;
+      btn.textContent = 'Procesando...';
+      await adminActionById(id);
+      btn.textContent = oldText;
+      btn.disabled = false;
+    }
+
+    if(btn.classList.contains('themePreset')){
+      e.preventDefault();
+      e.stopPropagation();
+      const d = getData();
+      d.appearance = d.appearance || {};
+      if(btn.dataset.theme === 'nike'){
+        d.appearance.blue = '#0077ff';
+        d.appearance.gold = '#ffffff';
+        d.appearance.overlay = 42;
+      }else if(btn.dataset.theme === 'adidas'){
+        d.appearance.blue = '#00c8ff';
+        d.appearance.gold = '#f7d36b';
+        d.appearance.overlay = 38;
+      }else{
+        d.appearance.blue = '#00bfff';
+        d.appearance.gold = '#f3c84b';
+        d.appearance.overlay = 35;
+      }
+      await saveAll(d);
+      fillAdmin();
+    }
+  }, true);
+})();
+
+
+/* FIX SELECT SERIES ADMIN */
+document.addEventListener('DOMContentLoaded', ()=>{
+  setTimeout(()=>{
+    const sel = document.getElementById('standingSerie');
+    if(sel && !sel.dataset.loadedSeries){
+      sel.dataset.loadedSeries = '1';
+      sel.innerHTML = SERIES.map(s=>`<option>${s}</option>`).join('');
+    }
+  }, 500);
+});
